@@ -8,7 +8,6 @@ namespace FluidTYPO3\Flux\Hooks;
  * LICENSE.md file that was distributed with this source code.
  */
 
-use FluidTYPO3\Flux\Service\ContentService;
 use TYPO3\CMS\Backend\RecordList\RecordListGetTableHookInterface;
 use TYPO3\CMS\Recordlist\RecordList\DatabaseRecordList;
 
@@ -32,7 +31,8 @@ class RecordListGetTableHookSubscriber implements RecordListGetTableHookInterfac
     public function getDBlistQuery($table, $pageId, &$additionalWhereClause, &$selectedFieldsList, &$parentObject)
     {
         if ('tt_content' === $table) {
-            $additionalWhereClause .= ' AND colPos <> ' . ContentService::COLPOS_FLUXCONTENT;
+            // TODO: filter by negative list of flux columns
+            $additionalWhereClause .= ' AND colPos <> 18181';
         }
     }
 }

@@ -10,6 +10,8 @@ namespace FluidTYPO3\Flux\Form\Container;
 
 use FluidTYPO3\Flux\Form\AbstractFormContainer;
 use FluidTYPO3\Flux\Form\ContainerInterface;
+use TYPO3\CMS\Backend\View\BackendLayout\BackendLayout;
+use TYPO3\CMS\Core\TypoScript\ExtendedTemplateService;
 
 /**
  * Grid
@@ -28,6 +30,118 @@ class Grid extends AbstractFormContainer implements ContainerInterface
             'rows' => $this->buildChildren($this->children)
         ];
         return $structure;
+    }
+
+    /**
+     * @return array
+     */
+    public function buildBackendLayoutArray()
+    {
+        $config = [
+            'colCount' => 0,
+            'rowCount' => 0,
+            'rows.' => []
+        ];
+        $rowIndex = 0;
+        foreach ($this->getRows() as $row) {
+            $index = 0;
+            $colCount = 0;
+            $rowKey = ($rowIndex + 1) . '.';
+            $columns = [];
+            foreach ($row->getColumns() as $column) {
+                $key = ($index + 1) . '.';
+                $columns[$key] = [
+                    'name' => $column->getLabel(),
+                    'colPos' => $column->getColumnPosition() >= 0 ? $column->getColumnPosition() : null
+                ];
+                if ($column->getColspan()) {
+                    $columns[$key]['colspan'] = $column->getColspan();
+                }
+                if ($column->getRowspan()) {
+                    $columns[$key]['rowspan'] = $column->getRowspan();
+                }
+                $colCount += $column->getColspan() ? $column->getColspan() : 1;
+                ++ $index;
+            }
+            $config['colCount'] = max($config['colCount'], $colCount);
+            $config['rowCount']++;
+            $config['rows.'][$rowKey] = [
+                'columns.' => $columns
+            ];
+            ++ $rowIndex;
+        }
+        return $config;
+    }
+
+    public function buildExtendedBackendLayoutArray()
+    {
+        $config = $this->buildBackendLayoutArray();
+
+        $colPosList = [];
+        $items = [];
+        $rowIndex = 0;
+        foreach ($config['rows.'] as $row) {
+            $index = 0;
+            $colCount = 0;
+            $columns = [];
+            foreach ($row['columns.'] as $column) {
+                $key = ($index + 1) . '.';
+                $columns[$key] = [
+                    'name' => $column['label'] ?? $column['name'],
+                    'colPos' => (string)$column['colPos']
+                ];
+                if ($column['colspan']) {
+                    $columns[$key]['colspan'] = $column['colspan'];
+                }
+                if ($column['rowspan']) {
+                    $columns[$key]['rowspan'] = $column['rowspan'];
+                }
+                $colPosList[$columns[$key]['colPos']] = $columns[$key]['colPos'];
+                array_push($items, [$columns[$key]['name'], $columns[$key]['colPos'], null]);
+                $colCount += $column['colspan'] ? $column['colspan'] : 1;
+                ++ $index;
+            }
+            ++ $rowIndex;
+        }
+
+        $backendLayout['__config'] = ['backend_layout.' => $config];
+        $backendLayout['__colPosList'] = $colPosList;
+        $backendLayout['__items'] = $items;
+
+        return $backendLayout;
+    }
+
+    /**
+     * @return BackendLayout
+     */
+    public function buildBackendLayout()
+    {
+        $configuration = $this->buildBackendLayoutArray();
+        $configuration = $this->ensureDottedKeys($configuration);
+        $typoScriptParser = new ExtendedTemplateService();
+        $typoScriptParser->flattenSetup($configuration, 'backend_layout.', false);
+        $typoScriptString = '';
+        foreach ($typoScriptParser->flatSetup as $name => $value) {
+            $typoScriptString .= $name . ' = ' . $value . LF;
+        }
+        return new BackendLayout($this->getRoot()->getName(), $this->getRoot()->getExtensionName(), $typoScriptString);
+    }
+
+    /**
+     * @param array $configuration
+     * @return array
+     */
+    protected function ensureDottedKeys(array $configuration)
+    {
+        $converted = [];
+        foreach ($configuration as $key => $value) {
+            if (true === is_array($value)) {
+                $key = rtrim($key, '.') . '.';
+                $value = $this->ensureDottedKeys($value);
+            }
+            $converted[$key] = $value;
+        }
+        return $converted;
     }
 
     /**

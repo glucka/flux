@@ -38,6 +38,7 @@ if (!(TYPO3_REQUESTTYPE & TYPO3_REQUESTTYPE_INSTALL)) {
     $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['cms/layout/class.tx_cms_layout.php']['tt_content_drawItem']['flux'] = \FluidTYPO3\Flux\Backend\Preview::class;
 	$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['cms']['db_new_content_el']['wizardItemsHook']['flux'] = \FluidTYPO3\Flux\Hooks\WizardItemsHookSubscriber::class;
 	$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['GLOBAL']['recStatInfoHooks']['flux'] =  \FluidTYPO3\Flux\Hooks\ContentIconHookSubscriber::class . '->addSubIcon';
+    $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['cms/layout/class.tx_cms_layout.php']['record_is_used']['flux'] = \FluidTYPO3\Flux\Hooks\ContentUsedDecision::class . '->isContentElementUsed';
 
     // The following is a dual registration of the same TCA-manipulating hook; the reason for registering it twice for two
     // different hooks is that extTablesInclusion-PostProcessing does not get executed in FE, resulting in errors due to
