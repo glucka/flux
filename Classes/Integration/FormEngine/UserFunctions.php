@@ -51,7 +51,7 @@ class UserFunctions
             ->get(ProviderResolver::class)
             ->resolvePrimaryConfigurationProvider($table, $field, $parameters['record']);
 
-        if (!$provider) {
+        if (!$provider || !$provider->getForm($parameters['record'])) {
             return true;
         }
         return count($provider->getForm($parameters['record'])->getFields()) > 0;
